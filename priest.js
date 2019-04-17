@@ -2,20 +2,12 @@
 var group = ["Zeanno", "HealMeSenpai", "Adellum"];
 
 setInterval(function () {
-
-		let player1 = get_player("HealMeSenpai");
-		if (player1 == null) return;
-		if (player1.visible == null) return;
-		if (get_player("HealMeSenpai").party != "Zeanno") {
-			send_party_invite(player1)
-		}
-		let player2 = get_player("Adellum");
-		if (player2 == null) return;
-		if (player2.visible == null) return;
-		if (get_player("Adellum").party != "Zeanno") {
-			send_party_invite(player2);
-		}
-     else {
+    if (character.name == group[0]) {
+        for (let i = 1; i < group.length; i++) {
+            let name = group[i];
+            send_party_invite(name);
+        }
+    } else {
         if (character.party) {
             if (character.party != group[0]) {
                 parent.socket.emit("party", {event: "leave"})
@@ -25,16 +17,6 @@ setInterval(function () {
         }
     }
 }, 1000 * 10);
-
-setInterval(function () {
-
-		if (get_active_characters().HealMeSenpai === undefined) {
-			start_character("HealMeSenpai", 2)
-		}
-		if (get_active_characters().Adellum === undefined) {
-			start_character("Adellum", 3)
-		}
-}, 1000);
 
 function on_party_request(name) {
     console.log("Party Request");
@@ -48,31 +30,20 @@ function on_party_invite(name) {
         accept_party_invite(name);
     }
 }
+
+var Zeanno = get_player("Zeanno")
 //calls merchant
 setInterval(function () {
 	let items = parent.character.items
-	let eggs = ["egg0", "egg1", "egg2", "egg3", "egg4", "egg5", "egg6", "egg7", "egg8", "goldenegg", "vitscroll", "cscale", "gem0"];
 	if ((items[36]) != null) {
 		give_location("Jewbilation")
-	}
-	for(let i = 2; i < 42; i++) {
-		if ((items[i]) != null) {
-			if(eggs.indexOf(items[i].name) > -1) {
-				send_item("HealMeSenpai", i, 1)
-			}
-		}
 	}
 }, 1000 *10);
 
 game_log("---Script Start---");
-load_code(11)
-//Priority targets that you will focus as soon as they get close enough
-var priority_targets = ["phoenix", "mvampire", "goldenbat", "wabbit"]
+//load_code(11)
 //Put monsters you want to kill in here
-//If your character has no target, it will travel to a spawn of the first monster in the list below.
-var monster_targets = ["bat"];
-//put levels of monsters you want to kill here
-var monster_levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ,21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+var monster_targets = ["bat", "phoenix", "mvampire"];
 
 var state = "farm";
 
@@ -80,39 +51,15 @@ var min_potions = 50; //The number of potions at which to do a resupply run.
 var purchase_amount = 200;//How many potions to buy at once.
 var potion_types = ["hpot0", "mpot0"];//The types of potions to keep supplied.
 
-//Show character ranges
+//Show character range
 //setInterval(function(){
-	//clear_drawings()
-	//let Adellum = get_player("Adellum")
-	//let HealMeSenpai = get_player("HealMeSenpai")
-	//let grey = 0x566573
-	//let purple = 0xA569BD
-	//let green = 0x229954
-	//if (HealMeSenpai != null && Adellum != null){
-	//draw_circle(character.real_x, character.real_y, character.range, 1, grey)
-	//draw_circle(Adellum.real_x, Adellum.real_y, Adellum.range, 1, green)
-	//draw_circle(HealMeSenpai.real_x, HealMeSenpai.real_y, HealMeSenpai.range, 1, purple)
-	//}
+//	clear_drawings()
+//	draw_circle(character.real_x, character.real_y, parent.character.range, 1, 0xD2F33E)
+//	let player = get_player("Zeanno");
+//	if (player == null) return;
+//	if (player.visible == null) return;
+//	draw_circle(get_player("Zeanno").real_x, get_player("Zeanno").real_y, get_player("Zeanno").range)
 //}, 50);
-
-//call merchant if lucky buff wears off or someone else puts one on you
-setInterval(function () {
-	let player = "Jewbilation"
-	if (parent.character.s.mluck === undefined) {
-		give_location(player)
-	}
-	else {
-		if (parent.character.s.mluck.f !== player) {
-			give_location(player)
-		}
-	}
-	if (get_player("Jewbilation") != null) {
-		stop(move)
-		move(
-		character.x + ((player.x - character.x)),
-		character.y + ((player.y - character.y)));
-	}
-}, 1000 *60);
 
 //Send Items and gold to merchant if in range
 setInterval(function () {
@@ -124,7 +71,6 @@ setInterval(function () {
 	for(let i = 2; i < 42; i++) {
     	if ((items[i]) != null) {
 			send_item(player, i, 1)
-			send_cm("Jewbilation", "thanks")
 		}
 	}
 	if (gold > 500000) {
@@ -155,7 +101,7 @@ setInterval(function () {
     loot();
 
     //Heal With Potions if we're below 75% hp.
-    if (character.hp / character.max_hp < 0.75 || character.mp / character.max_mp < 0.25) {
+    if (character.hp / character.max_hp < 0.75 || character.mp / character.max_mp < 0.75) {
         use_hp_or_mp();
     }
 }, 500 );//Execute 2 times per second
@@ -189,65 +135,53 @@ function state_controller()
 //This function contains our logic for when we're farming mobs
 function farm()
 {
-	var target = find_priority_targets()[0];
-	//if my distance is out of my healers range go back to healer
-	let HealMeSenpai = get_player("HealMeSenpai");
-	if (HealMeSenpai == null) return;
-	if (parent.distance(character, HealMeSenpai) > HealMeSenpai.range + 50) {
-		stop(move)
-		move(
-		character.x + ((HealMeSenpai.x - character.x) / 2),
-		character.y + ((HealMeSenpai.y - character.y) / 2));
-	}
-	let Jewbilation = get_player("Jewbilation");
-	if (Jewbilation != null && parent.character.s.mluck === undefined) {
-		move_to_target(Jewbilation)
-	}
-	if (parent.character.s.mluck !== undefined) {
-		if (Jewbilation != null && parent.character.s.mluck.f !== "Jewbilation") {
-			move_to_target(Jewbilation)
-		}
-	}
-	//Attack or move to target
-  if (target != null) {
-      if (distance_to_point(target.real_x, target.real_y) < character.range) {
-					if (target.target != "Zeanno") {
-						taunt(target)
-					}
-          if (can_attack(target)) {
-              attack(target);
+    var lowest_health = lowest_health_partymember();
+
+    //If we have a target to heal, heal them. Otherwise attack a target.
+    if (lowest_health != null && lowest_health.health_ratio < 0.8) {
+        if (distance_to_point(lowest_health.real_x, lowest_health.real_y) < character.range) {
+            heal(lowest_health);
+        }
+        else {
+            move_to_target(lowest_health);
+        }
+    }
+    else {
+		    let player = get_player("Zeanno");
+		    if (player != null){
+			       var target = get_target_of(player);
+		    }
+        if (player == null && !smart.moving) {
+          ask_location("Zeanno")
+        }
+        if (target != null && is_monster(target)) {
+            if (player != null && target != null && target.s.cursed == undefined && in_attack_range(target)) {
+              if (target.hp > 6000) {
+                curse(target)
+              }
+            }
+            if (distance_to_point(target.real_x, target.real_y) < character.range) {
+                if (can_attack(target)) {
+                    attack(target);
+                }
+            }
+        }
+        else {
+          let player = get_player("Zeanno");
+          if (player == null) return;
+          if (parent.distance(character, player) < character.range){
+            stop(move)
+            move(
+            character.x + ((player.x - character.x) - 20),
+            character.y + ((player.y - character.y) - 20));
           }
-      }
-      else {
-				if (!is_moving(get_player("Zeanno"))) {
-          move_to_target(target);
-				}
-      }
-	}
-	else
-	{
-		var target = find_viable_targets()[0];
-		//Attack or move to target
-	    if (target != null) {
-	        if (distance_to_point(target.real_x, target.real_y) < character.range) {
-	            if (can_attack(target)) {
-	                attack(target);
-	            }
-	        }
-					else {
-						if (!is_moving(get_player("Zeanno"))) {
-		          move_to_target(target);
-						}
-		      }
-		}
-		else
-		{
-			if (!is_moving(get_player("Zeanno"))) {
-				game_log("finding a target");
-	            smart_move({ to: monster_targets[0] });
-	    }
-		}
-	}
+          else{
+            if (!smart.moving) {
+              ask_location("Zeanno")
+            }
+          }
+        }
+    }
 }
 
 //This function contains our logic during resupply runs
@@ -374,9 +308,11 @@ function find_viable_targets() {
     var monsters = Object.values(parent.entities).filter(
         mob => (mob.target == null
                     || parent.party_list.includes(mob.target)
-                    || mob.target == character.name) && (mob.type == "monster" && (parent.party_list.includes(mob.target)
-                    || mob.target == character.name))
-                    || monster_targets.includes(mob.mtype) && monster_levels.includes(mob.level));
+                    || mob.target == character.name)
+                && (mob.type == "monster"
+                    && (parent.party_list.includes(mob.target)
+                        || mob.target == character.name))
+                    || monster_targets.includes(mob.mtype));
 
     for (id in monsters) {
         var monster = monsters[id];
@@ -410,53 +346,65 @@ function find_viable_targets() {
     });
     return monsters;
 }
-//Same as above but for priority instead
-function find_priority_targets() {
-    var monsters = Object.values(parent.entities).filter(
-        mob => (mob.target == null
-                    || parent.party_list.includes(mob.target)
-                    || mob.target == character.name) && (mob.type == "monster" && (parent.party_list.includes(mob.target)
-                    || mob.target == character.name))
-                    || priority_targets.includes(mob.mtype));
 
-    for (id in monsters) {
-        var monster = monsters[id];
+//Returns the party member with the lowest hp -> max_hp ratio.
+function lowest_health_partymember() {
+    var party = [];
+    if (parent.party_list.length > 0) {
+		for(id in parent.party_list)
+		{
+			var member = parent.party_list[id];
 
-        if (parent.party_list.includes(monster.target)
-                    || monster.target == character.name) {
-            monster.targeting_party = 1;
+			var entity = parent.entities[member];
+
+			if(member == character.name)
+			{
+				entity = character;
+			}
+
+			if(entity != null)
+			{
+				party.push({name: member, entity: entity});
+			}
+		}
+    }
+	else
+	{
+		//Add Self to Party Array
+		party.push(
+		{
+			name: character.name,
+			entity: character
+		});
+	}
+
+    //Populate health percentages
+    for (id in party) {
+        var member = party[id];
+        if (member.entity != null) {
+            member.entity.health_ratio = member.entity.hp / member.entity.max_hp;
         }
         else {
-            monster.targeting_party = 0;
+            member.health_ratio = 1;
         }
     }
 
-    //Order monsters by whether they're attacking us, then by distance.
-    monsters.sort(function (current, next) {
-        if (current.targeting_party > next.targeting_party) {
-            return -1;
-        }
-        var dist_current = distance(character, current);
-        var dist_next = distance(character, next);
-        // Else go to the 2nd item
-        if (dist_current < dist_next) {
-            return -1;
-        }
-        else if (dist_current > dist_next) {
-            return 1
-        }
-        else {
-            return 0;
-        }
+    //Order our party array by health percentage
+    party.sort(function (current, next) {
+        return current.entity.health_ratio - member.entity.health_ratio;
     });
-    return monsters;
+
+
+    //Return the lowest health
+    return party[0].entity;
 }
-//taunt an enemy who is targeting an ally
-var tauntcd;
-function taunt(target) {
+//Put curse on target if it's not already cursed
+var lastcurse;
+
+function curse(target) {
   //Curse only if target hasn't been cursed and if curse is off cd (cd is 5sec).
-  if (!tauntcd || new Date() - tauntcd > 3000) {
-    tauntcd = new Date();
-    parent.use_skill("taunt", target.id);
+  if ((!lastcurse || new Date() - lastcurse > 5000) && !target.cursed) {
+    lastcurse = new Date();
+    parent.use_skill("curse", target.id);
   }
 }
