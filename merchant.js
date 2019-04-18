@@ -83,7 +83,7 @@ setInterval(function () {
     }
 }, 500 );//Execute 2 times per second
 
-var upgradeMaxLevel = 8; //Max level it will stop upgrading items at if enabled
+var upgradeMaxLevel = 7; //Max level it will stop upgrading items at if enabled
 var upgradeWhitelist =
 	{
 		//ItemName, Max Level
